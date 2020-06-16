@@ -62,9 +62,6 @@ if(propFile.exists()){
 def git = System.getProperty('git',properties.get('git','git'))
 def repos_pwd = System.getProperty('repos_pwd',properties.get('repos_pwd','repos_pwd'))
 def repos_usr = System.getProperty('repos_usr',properties.get('repos_usr','repos_usr'))
-def dburl = System.getProperty('dburl',properties.get('dburl'))
-def dbusr = System.getProperty('dbusr',properties.get('dbusr'))
-def dbpwd = System.getProperty('dbpwd',properties.get('dbpwd'))
     
 def generatedResources = "$buildDir/generated-resources/main"
 
@@ -103,12 +100,6 @@ task generateMyResources {
 
 
 test {
-	// when Gradle forks a new Java process, it does not automatically pass the 
-	// environment variable values along to the new environment. One has to 
-	// explicitly pass these variables
-	systemProperty 'dburl', dburl
-	systemProperty 'dbusr', dbusr
-	systemProperty 'dbpwd', dbpwd
     testLogging.exceptionFormat = 'full'
 }
 
