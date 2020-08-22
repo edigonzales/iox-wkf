@@ -1,5 +1,11 @@
+  plugins {
+    id 'maven-publish'
+    id "com.jfrog.bintray" version "1.8.4"
+}
+
 group 'ch.interlis'
-version '1.0.2'+System.getProperty('release','-SNAPSHOT')
+//version '1.0.2'+System.getProperty('release','-SNAPSHOT')
+version = new ProjectVersion(1, 2, System.env.GITHUB_RUN_NUMBER)
 
 apply plugin: "java"
 apply plugin: "maven"
@@ -123,5 +129,118 @@ uploadArchives {
             	authentication(userName: repos_usr, password: repos_pwd)
             }
         }
+    }
+}
+
+// TEMPORARY
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+javadoc.failOnError = false
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+def githubRepoUrl = "https://github.com/edigonzales/iox-wkf"
+def pomConfig = {
+    licenses {
+        license {
+            name "MIT License"
+            url "https://opensource.org/licenses/MIT"
+        }
+    }
+    developers {
+        developer {
+            id "edigonzales"
+            name "Stefan Ziegler"
+            email "stefan.ziegler@bd.so.ch"
+        }
+    }
+
+    scm {
+        url githubRepoUrl
+    }
+}
+
+publishing {
+    publications {
+        mavenPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar {
+                classifier "sources"
+            }
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+            groupId project.group
+            artifactId 'iox-wkf'
+            version project.version
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', 'iox-wkf')
+                root.appendNode('name', 'iox-wkf')
+                root.appendNode('url', githubRepoUrl)
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+bintray {
+    user = System.env.bintrayUser
+    key = System.env.bintrayKey
+    publications = ['mavenPublication']
+    publish = true
+    
+    pkg {
+        repo = 'iox-wkf'
+        name = 'iox-wkf'
+        userOrg = 'sogis'
+        licenses = ['MIT']
+        labels = ['Shapefile', 'GeoPackage']        
+        vcsUrl = githubRepoUrl
+        version {
+            name = project.version
+            desc = project.version
+            released  = new Date()
+        }
+    }
+}
+
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
+class ProjectVersion {
+    Integer major
+    Integer minor
+    String build
+    
+    ProjectVersion(Integer major, Integer minor, String build) {
+        this.major = major
+        this.minor = minor
+        this.build = build
+    }
+    
+    @Override
+    String toString() {
+        String fullVersion = "$major.$minor"
+        
+        if(build) {
+            fullVersion += ".$build"
+        }    
+        fullVersion
     }
 }
